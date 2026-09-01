@@ -11,8 +11,8 @@ export class LoginUserDto {
   @IsEmail()
   email?: string;
 
+  @IsString()
   @IsPhoneNumber()
-  @IsNotEmpty()
   phoneNumber?: string;
 
   @IsString()
