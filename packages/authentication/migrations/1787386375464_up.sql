@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS "users"
     "password" varchar(255) NOT NULL,
     "role" varchar(64) DEFAULT NULL,
     "isVerified" bool DEFAULT FALSE,
+    "phoneVerifiedAt" timestamp DEFAULT NULL,
+    "emailVerifiedAt" timestamp DEFAULT NULL,
     "updateAt" timestamp DEFAULT NULL,
     "createAt" timestamp DEFAULT now()
 );
