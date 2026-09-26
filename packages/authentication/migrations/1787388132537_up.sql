@@ -6,10 +6,6 @@ CREATE TABLE IF NOT EXISTS sessions (
     refresh_token_hash varchar(255) unique not null,
     expires_at timestamp not null ,
     revoked_at timestamp,
-    d_at timestamp default now() not null ,
+    created_at timestamp default now() not null ,
     updated_at timestamp default now() not null
 );
-
-CREATE INDEX idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX idx_sessions_refresh_token ON sessions(refresh_token_hash);
-
