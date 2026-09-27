@@ -12,8 +12,7 @@ export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
   async findById(id: string): Promise<SafeUserEntity | null> {
     this.logger.debug(`Finding user by id ${id}`);
-    const user = this.userRepository.findById(id);
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    const user = await this.userRepository.findById(id);
     if (!user) {
       this.logger.warn(`User with id ${id} not found`);
       throw new NotFoundException(`User with id ${id} not found`);
@@ -25,7 +24,10 @@ export class UserService {
     phoneNumber?: string,
     email?: string,
   ): Promise<UserEntity | null> {
-    this.logger.debug(`Finding user by phone number or email`);
+    this.logger.debug(`Finding user by phone number or email`, {
+      phoneNumber,
+      email,
+    });
     return this.userRepository.findByPhoneOrEmailWithPass(phoneNumber, email);
   }
 
@@ -33,7 +35,10 @@ export class UserService {
     phoneNumber?: string,
     email?: string,
   ): Promise<SafeUserEntity | null> {
-    this.logger.debug(`Finding user by phone number or email`);
+    this.logger.debug(`Finding user by phone number or email`, {
+      phoneNumber,
+      email,
+    });
     return this.userRepository.findByPhoneOrEmail(phoneNumber, email);
   }
 
@@ -54,7 +59,11 @@ export class UserService {
     lastName: string;
     passwordHash: string;
   }): Promise<SafeUserEntity> {
-    this.logger.log(`creating user with phoneNumber or Email`);
+    this.logger.log(
+      `creating user with phoneNumber or Email`,
+      data.phoneNumber,
+      data.email,
+    );
     const existingUser = await this.userRepository.findByPhoneOrEmailWithPass(
       data.phoneNumber,
       data.email,
@@ -63,7 +72,9 @@ export class UserService {
       this.logger.warn(`User already exists: ${data.phoneNumber}`);
       throw new ConflictException('Phone number or email already exists');
     }
-    this.logger.debug(`Creating user with phoneNumber`);
+    this.logger.debug(`Creating user with phoneNumber`, {
+      phoneNumber: data.phoneNumber,
+    });
     return this.userRepository.User(data);
   }
 
