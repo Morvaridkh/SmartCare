@@ -15,6 +15,7 @@ export class SessionRepository {
     this.pool = this.poolFactory.getPool('default');
   }
   async createSession(data: {
+    id: string;
     userId: string;
     refreshTokenHash: string;
     ipAddress?: string;
@@ -24,9 +25,10 @@ export class SessionRepository {
     this.logger.log(`Creating session for user: ${data.userId}`);
     try {
       const result = await this.pool.query<SessionEntity>(
-        `insert into sessions(user_id, ip_address, user_agent, refresh_token_hash, expires_at) 
-          values ($1, $2, $3, $4, $5) returning *`,
+        `insert into sessions(id, user_id, ip_address, user_agent, refresh_token_hash, expires_at) 
+          values ($1, $2, $3, $4, $5, $6) returning *`,
         [
+          data.id,
           data.userId,
           data.ipAddress ?? null,
           data.userAgent ?? null,
@@ -110,29 +112,43 @@ export class SessionRepository {
       throw new InternalServerErrorException('Failed to revoke sessions');
     }
   }
+  async rotateRefreshToken(
+    id: string,
+    newRefreshTokenHash: string,
+    newExpiresAt: Date,
+    oldRefreshToken: string,
+  ): Promise<SessionEntity | null> {
+    this.logger.log(`Rotating refresh token for session: ${id}`);
 
-  async updateExpiresAt(id: string, newExpiresAt: Date): Promise<boolean> {
-    this.logger.log(`Updating expires at for session: ${id}`);
     try {
-      const result = await this.pool.query(
-        `UPDATE sessions 
-       SET expires_at = $1, updated_at = NOW()
-       WHERE id = $2`,
-        [newExpiresAt, id],
+      const result = await this.pool.query<SessionEntity>(
+        `
+      UPDATE sessions
+      SET
+        refresh_token_hash = $1,
+        expires_at = $2,
+        updated_at = NOW()
+      WHERE id = $3
+      AND refresh_token_hash = $4
+      AND revoked_at IS NULL
+      AND expires_at > now()
+      RETURNING *
+      `,
+        [newRefreshTokenHash, newExpiresAt, id, oldRefreshToken],
       );
 
-      const success = (result.rowCount ?? 0) > 0;
-      if (success) {
-        this.logger.log(`Session expires at updated: ${id}`);
-      } else {
-        this.logger.warn(`Session not found for update: ${id}`);
+      if (!result.rows[0]) {
+        this.logger.warn(`Session not found for refresh token rotation: ${id}`);
+        return null;
       }
-      return success;
+
+      return result.rows[0];
     } catch (error) {
       this.logger.error(
-        `Failed to update expires at for session ${id}:`,
+        `Failed to rotate refresh token for session ${id}`,
         error,
       );
+
       throw new InternalServerErrorException('Failed to update session');
     }
   }
