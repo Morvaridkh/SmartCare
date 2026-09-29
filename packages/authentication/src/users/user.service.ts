@@ -75,7 +75,7 @@ export class UserService {
     this.logger.debug(`Creating user with phoneNumber`, {
       phoneNumber: data.phoneNumber,
     });
-    return this.userRepository.User(data);
+    return this.userRepository.createUser(data);
   }
 
   async update(
@@ -107,7 +107,7 @@ export class UserService {
     }
     return this.userRepository.updateUser(id, data);
   }
-  async deleteUser(id: string): Promise<SafeUserEntity | null> {
+  async deleteUser(id: string): Promise<{ id: string } | null> {
     this.logger.log(`Delete user by id ${id}`);
     const existingUser = await this.userRepository.findById(id);
     if (!existingUser) {

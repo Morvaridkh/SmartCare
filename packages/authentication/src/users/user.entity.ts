@@ -13,7 +13,7 @@ export class UserEntity {
 
   phoneVerifiedAt?: Date;
   emailVerifiedAt?: Date;
-  dAt: Date;
+  createdAt: Date;
   updatedAt?: Date;
 }
 
