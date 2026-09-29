@@ -15,6 +15,7 @@ export class SessionService {
   constructor(private readonly sessionRepository: SessionRepository) {}
 
   async createSession(
+    sessionId: string,
     userId: string,
     refreshToken: string,
     ipAddress?: string,
@@ -28,6 +29,7 @@ export class SessionService {
     const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
     const session = await this.sessionRepository.createSession({
+      id: sessionId,
       userId,
       refreshTokenHash,
       ipAddress,
@@ -104,8 +106,12 @@ export class SessionService {
     this.logger.log(`All sessions revoked for user: ${userId}`);
   }
 
-  async refreshSession(sessionId: string): Promise<SessionEntity> {
-    this.logger.log(`Refreshing session: ${sessionId}`);
+  async rotateRefreshToken(
+    sessionId: string,
+    oldRefreshToken: string,
+    newRefreshToken: string,
+  ): Promise<SessionEntity> {
+    this.logger.log(`Rotating refresh token for session: ${sessionId}`);
 
     const session = await this.sessionRepository.findById(sessionId);
     if (!session) {
@@ -116,13 +122,26 @@ export class SessionService {
       throw new UnauthorizedException('Session is not active');
     }
 
+    const oldRefreshTokenHash = this.hashRefreshToken(oldRefreshToken);
+    const newRefreshTokenHash = this.hashRefreshToken(newRefreshToken);
+
     const newExpiresAt = new Date();
     newExpiresAt.setDate(newExpiresAt.getDate() + this.SessionExpireDay);
 
-    await this.sessionRepository.updateExpiresAt(sessionId, newExpiresAt);
+    const updatedSession = await this.sessionRepository.rotateRefreshToken(
+      sessionId,
+      newRefreshTokenHash,
+      newExpiresAt,
+      oldRefreshTokenHash,
+    );
 
-    const updatedSession = await this.sessionRepository.findById(sessionId);
-    this.logger.log(`Session refreshed: ${sessionId}`);
-    return updatedSession!;
+    if (!updatedSession) {
+      this.logger.warn(`Rotation failed for session: ${sessionId}`);
+      throw new UnauthorizedException('Refresh token rotation failed');
+    }
+
+    this.logger.log(`Refresh token rotated for session: ${sessionId}`);
+
+    return updatedSession;
   }
 }
