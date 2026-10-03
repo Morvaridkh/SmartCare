@@ -10,7 +10,7 @@ import { SafeUserEntity, UserEntity } from './user.entity';
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   constructor(private readonly userRepository: UserRepository) {}
-  async findById(id: string): Promise<SafeUserEntity | null> {
+  async findById(id: string): Promise<SafeUserEntity> {
     this.logger.debug(`Finding user by id ${id}`);
     const user = await this.userRepository.findById(id);
     if (!user) {

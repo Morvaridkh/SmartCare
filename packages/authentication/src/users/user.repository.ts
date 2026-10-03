@@ -178,7 +178,7 @@ export class UserRepository {
         return this.findById(id);
       }
 
-      updates.push(`"updatedAt" = NOW()`);
+      updates.push(`"updateAt" = NOW()`);
 
       const query = `
       UPDATE users
